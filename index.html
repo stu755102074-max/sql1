@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học SQL Tương Tác - Bài 14 (Tin Học 11)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+    <!-- CODEMIRROR -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/sql/sql.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .CodeMirror { border-radius: 0.5rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 15px; height: 220px !important; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.1); padding: 10px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-6 lg:p-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+
+    <header class="max-w-7xl mx-auto mb-8 relative">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 drop-shadow-sm mb-2"><i class="fa-solid fa-database mr-2"></i>Thực Hành SQL Tương Tác</h1>
+            <p class="text-slate-600 font-medium text-lg">Bài 14: SQL – Ngôn ngữ truy vấn có cấu trúc (Tin học 11)</p>
+        </div>
+
+        <div class="glass-panel max-w-2xl mx-auto rounded-xl p-4 border border-blue-200 shadow-md">
+            <div class="flex justify-between items-end mb-2">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Tổng điểm nhiệm vụ</h3>
+                    <div class="text-2xl font-black text-blue-600" id="score-display">0 / 200 Điểm</div>
+                </div>
+                <button onclick="clearProgress()" class="text-xs text-red-500 hover:text-red-700 underline flex items-center">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Làm lại từ đầu
+                </button>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-3 rounded-full transition-all duration-1000" id="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- CỘT TRÁI -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="glass-panel rounded-2xl p-5">
+                <h2 class="text-xl font-bold text-blue-800 mb-4 border-b pb-2"><i class="fa-solid fa-sitemap mr-2"></i>Sơ đồ CSDL "music"</h2>
+                <p class="text-xs text-slate-500 mb-3 italic">Bấm vào biểu tượng con mắt để xem toàn bộ dữ liệu bảng.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-blue-700"><i class="fa-solid fa-table mr-1"></i>nhacsi</span>
+                            <button onclick="viewData('nhacsi')" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <p class="text-sm"><i class="fa-solid fa-key text-yellow-500 mr-1"></i>Aid (INT)</p><p class="text-sm ml-4">TenNS (TEXT)</p>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-purple-700"><i class="fa-solid fa-table mr-1"></i>casi</span>
+                            <button onclick="viewData('casi')" class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <p class="text-sm"><i class="fa-solid fa-key text-yellow-500 mr-1"></i>Sid (TEXT)</p><p class="text-sm ml-4">TenCS (TEXT)</p>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-emerald-700"><i class="fa-solid fa-table mr-1"></i>bannhac</span>
+                            <button onclick="viewData('bannhac')" class="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <p class="text-sm"><i class="fa-solid fa-key text-yellow-500 mr-1"></i>Mid (TEXT)</p><p class="text-sm ml-4">TenBN (TEXT)</p><p class="text-sm"><i class="fa-solid fa-link text-slate-500 mr-1"></i>Aid (INT)</p>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-rose-700"><i class="fa-solid fa-table mr-1"></i>banthuam</span>
+                            <button onclick="viewData('banthuam')" class="text-xs bg-rose-600 text-white px-2 py-1 rounded hover:bg-rose-700"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <p class="text-sm"><i class="fa-solid fa-key text-yellow-500 mr-1"></i>id (INT)</p><p class="text-sm"><i class="fa-solid fa-link text-slate-500 mr-1"></i>Mid (TEXT)</p><p class="text-sm"><i class="fa-solid fa-link text-slate-500 mr-1"></i>Sid (TEXT)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-5 h-[500px] flex flex-col">
+                <h2 class="text-xl font-bold text-blue-800 mb-4 border-b pb-2"><i class="fa-solid fa-list-check mr-2"></i>Nhiệm vụ thực hành</h2>
+                <div class="overflow-y-auto flex-1 pr-2 space-y-4" id="task-list"></div>
+
+                <div class="mt-4 pt-3 border-t text-xs text-slate-600">
+                    <span class="font-bold text-slate-700"><i class="fa-solid fa-circle-info mr-1"></i> Luật chơi:</span>
+                    <span class="ml-2 text-green-600 font-bold">20đ</span> (Tự làm) | 
+                    <span class="ml-2 text-yellow-600 font-bold">10đ</span> (Dùng gợi ý) | 
+                    <span class="ml-2 text-red-600 font-bold">0đ</span> (Xem đáp án / Sai 3 lần)
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="glass-panel rounded-2xl p-5 flex flex-col h-full">
+                
+                <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+                    <h2 class="text-xl font-bold text-blue-800"><i class="fa-solid fa-terminal mr-2"></i>Trình soạn thảo SQL</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="useHint()" class="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded-md font-bold text-sm transition shadow-sm">
+                            <i class="fa-solid fa-lightbulb mr-1"></i>Gợi ý
+                        </button>
+                        <button onclick="showAnswer()" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 rounded-md font-bold text-sm transition shadow-sm">
+                            <i class="fa-solid fa-key mr-1"></i>Đáp án
+                        </button>
+                        <button onclick="runSQL()" class="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md font-bold text-sm transition shadow-md">
+                            <i class="fa-solid fa-play mr-2"></i>Chạy lệnh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KHUNG GHIM NHIỆM VỤ (MỚI THÊM) -->
+                <div id="activeTaskBox" class="hidden mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg shadow-sm transition-all duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1"><i class="fa-solid fa-thumbtack mr-1"></i>Đang thực hiện</h3>
+                            <h4 id="activeTaskTitle" class="text-base font-bold text-slate-900"></h4>
+                            <p id="activeTaskDesc" class="text-slate-700 mt-1 text-sm"></p>
+                        </div>
+                        <button onclick="document.getElementById('activeTaskBox').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 ml-2">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative mb-4">
+                   
+                    <textarea id="sql-editor" placeholder="Chọn một nhiệm vụ bên trái để bắt đầu..."></textarea>
+                </div>
+
+                <div class="flex justify-between items-end mb-2">
+                    <h3 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-poll mr-2"></i>Kết quả</h3>
+                    <button onclick="resetDB()" class="text-xs px-2 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded font-medium transition">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i>Khôi phục dữ liệu gốc
+                    </button>
+                </div>
+                
+                <div id="output-container" class="bg-white border rounded-lg overflow-x-auto min-h-[200px] shadow-inner p-1">
+                    <div id="table-wrapper" class="w-full text-center text-slate-500 mt-10">
+                        <i class="fa-solid fa-table-list text-3xl mb-2 opacity-50"></i><br>Kết quả truy vấn sẽ hiển thị ở đây
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db; let currentTask = null; let cmEditor; 
+        let completedTasks = []; let usedHints = []; let usedAnswers = []; 
+        let failedAttempts = {}; let failedTasks = [];
+        
+        // 10 NHIỆM VỤ GỐC + LIKE %
+        const tasks = [
+            { id: 1, group: "Phần 1: Khởi tạo & Cập nhật Dữ liệu", title: "1. Tạo bảng (CREATE TABLE)", desc: "Tạo bảng mới tên 'theloai' gồm 2 cột: Tid (kiểu INT, khóa chính) và TenTL (kiểu TEXT).", 
+              hintCode: "CREATE TABLE theloai (\n    Tid ... PRIMARY KEY,\n    TenTL ...\n);", answerCode: "CREATE TABLE theloai (\n    Tid INT PRIMARY KEY,\n    TenTL TEXT\n);",
+              explain: "Lệnh CREATE TABLE dùng để định nghĩa cấu trúc một bảng mới. PRIMARY KEY xác định cột đó là khóa chính.",
+              validate: (res, dbRef) => { try { return dbRef.exec("PRAGMA table_info(theloai)")[0].values.length === 2; } catch(e){return false;} } },
+            
+            { id: 2, group: "Phần 1: Khởi tạo & Cập nhật Dữ liệu", title: "2. Thêm dữ liệu (INSERT)", desc: "Thêm ca sĩ mới vào bảng casi: Mã là 'MT', Tên là 'Mỹ Tâm'.", 
+              hintCode: "INSERT INTO casi (..., ...) \nVALUES ('...', '...');", answerCode: "INSERT INTO casi (Sid, TenCS) \nVALUES ('MT', 'Mỹ Tâm');",
+              explain: "Lệnh INSERT INTO dùng để chèn dòng mới. Chuỗi TEXT phải đặt trong nháy đơn.",
+              validate: (res, dbRef) => dbRef.exec("SELECT * FROM casi WHERE Sid='MT'").length > 0 },
+              
+            { id: 3, group: "Phần 1: Khởi tạo & Cập nhật Dữ liệu", title: "3. Sửa dữ liệu (UPDATE)", desc: "Cập nhật tên nhạc sĩ có Aid = 1 thành 'Văn Cao (Cố NS)'.", 
+              hintCode: "UPDATE nhacsi \nSET TenNS = '...' \nWHERE Aid = ...;", answerCode: "UPDATE nhacsi \nSET TenNS = 'Văn Cao (Cố NS)' \nWHERE Aid = 1;",
+              explain: "Lệnh UPDATE sửa đổi dữ liệu đã có. Luôn nhớ dùng WHERE, nếu không toàn bộ bảng sẽ bị sửa.",
+              validate: (res, dbRef) => dbRef.exec("SELECT TenNS FROM nhacsi WHERE Aid=1")[0].values[0][0] === 'Văn Cao (Cố NS)' },
+              
+            { id: 4, group: "Phần 1: Khởi tạo & Cập nhật Dữ liệu", title: "4. Xóa dữ liệu (DELETE)", desc: "Xóa ca sĩ Lê Dung (có mã Sid = 'LD') khỏi bảng casi.", 
+              hintCode: "DELETE FROM casi \nWHERE ... = '...';", answerCode: "DELETE FROM casi \nWHERE Sid = 'LD';",
+              explain: "Lệnh DELETE xóa bản ghi. Lệnh này không thể hoàn tác trong thực tế (trừ khi dùng Transaction).",
+              validate: (res, dbRef) => dbRef.exec("SELECT * FROM casi WHERE Sid='LD'").length === 0 },
+
+            { id: 5, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "5. Truy xuất cơ bản (SELECT)", desc: "Hiển thị toàn bộ thông tin của bảng bannhac.", 
+              hintCode: "SELECT ... \nFROM ...;", answerCode: "SELECT * \nFROM bannhac;",
+              explain: "Dấu * dùng để lấy tất cả các cột trong bảng được chỉ định.",
+              validate: (res) => res && res.length > 0 && res[0].columns.includes('TenBN') && res[0].values.length >= 5 },
+            
+            { id: 6, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "6. Lọc dữ liệu (WHERE)", desc: "Lấy mã (Mid) và tên bản nhạc (TenBN) do nhạc sĩ Phạm Tuyên (Aid = 2) sáng tác.", 
+              hintCode: "SELECT ..., ... \nFROM bannhac \nWHERE ... = ...;", answerCode: "SELECT Mid, TenBN \nFROM bannhac \nWHERE Aid = 2;",
+              explain: "Mệnh đề WHERE giúp lọc các dòng thỏa mãn điều kiện logic.",
+              validate: (res) => res && res.length > 0 && res[0].values.length === 1 && res[0].values[0].includes('Như có Bác trong ngày đại thắng') },
+              
+            { id: 7, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "7. Sắp xếp (ORDER BY)", desc: "Lấy tất cả ca sĩ (bảng casi), sắp xếp tên ca sĩ (TenCS) theo thứ tự Alphabet (Từ A-Z).", 
+              hintCode: "SELECT * \nFROM casi \nORDER BY ... ASC;", answerCode: "SELECT * \nFROM casi \nORDER BY TenCS ASC;",
+              explain: "ORDER BY dùng để sắp xếp kết quả. ASC là tăng dần (mặc định), DESC là giảm dần.",
+              validate: (res) => res && res.length > 0 && res[0].values[0].includes('LD') },
+
+            { id: 8, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "8. Liên kết 2 bảng (JOIN)", desc: "Lấy Tên bản nhạc (TenBN) và Tên nhạc sĩ (TenNS) tương ứng sáng tác bài đó.", 
+              hintCode: "SELECT bannhac.TenBN, nhacsi.TenNS \nFROM bannhac \nJOIN ... ON bannhac.Aid = ...;", answerCode: "SELECT bannhac.TenBN, nhacsi.TenNS \nFROM bannhac \nJOIN nhacsi ON bannhac.Aid = nhacsi.Aid;",
+              explain: "JOIN kết hợp dòng từ 2 bảng dựa trên cột chung (Khóa chính - Khóa ngoại).",
+              validate: (res) => res && res.length > 0 && res[0].columns.includes('TenNS') && res[0].values.length >= 5 },
+
+            { id: 9, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "9. Thống kê (COUNT / GROUP BY)", desc: "Đếm xem mỗi nhạc sĩ đã sáng tác bao nhiêu bản nhạc (Hiển thị Aid, số lượng).", 
+              hintCode: "SELECT Aid, COUNT(...) as SoLuong \nFROM bannhac \nGROUP BY ...;", answerCode: "SELECT Aid, COUNT(Mid) as SoLuong \nFROM bannhac \nGROUP BY Aid;",
+              explain: "GROUP BY gom nhóm các dòng cùng Aid, sau đó COUNT() sẽ đếm số lượng dòng trong mỗi nhóm.",
+              validate: (res) => res && res.length > 0 && res[0].columns.includes('Aid') && res[0].values.length >= 4 && res[0].values[0][1] === 2 },
+              
+            { id: 10, group: "Phần 2: Truy xuất Dữ liệu (DQL)", title: "10. Tìm kiếm chuỗi (Toán tử LIKE)", desc: "Tìm mã (Mid) và tên (TenBN) của các bản nhạc có chứa từ 'sông' trong tên bài hát.", 
+              hintCode: "SELECT Mid, TenBN \nFROM bannhac \nWHERE TenBN LIKE '%...%';", answerCode: "SELECT Mid, TenBN \nFROM bannhac \nWHERE TenBN LIKE '%sông%';",
+              explain: "Toán tử LIKE kết hợp với ký tự % (đại diện cho một chuỗi bất kỳ) giúp tìm kiếm gần đúng.",
+              validate: (res) => res && res.length > 0 && res[0].columns.includes('TenBN') && res[0].values.length === 2 }
+        ];
+
+        function loadProgress() {
+            if (localStorage.getItem('sqlProgV8')) completedTasks = JSON.parse(localStorage.getItem('sqlProgV8'));
+            if (localStorage.getItem('sqlHintsV8')) usedHints = JSON.parse(localStorage.getItem('sqlHintsV8'));
+            if (localStorage.getItem('sqlAnsV8')) usedAnswers = JSON.parse(localStorage.getItem('sqlAnsV8'));
+            if (localStorage.getItem('sqlFailAttV8')) failedAttempts = JSON.parse(localStorage.getItem('sqlFailAttV8'));
+            if (localStorage.getItem('sqlFailTskV8')) failedTasks = JSON.parse(localStorage.getItem('sqlFailTskV8'));
+            updateScoreUI();
+        }
+
+        function saveProgress() {
+            localStorage.setItem('sqlProgV8', JSON.stringify(completedTasks)); localStorage.setItem('sqlHintsV8', JSON.stringify(usedHints));
+            localStorage.setItem('sqlAnsV8', JSON.stringify(usedAnswers)); localStorage.setItem('sqlFailAttV8', JSON.stringify(failedAttempts));
+            localStorage.setItem('sqlFailTskV8', JSON.stringify(failedTasks)); updateScoreUI();
+        }
+
+        function clearProgress() {
+            Swal.fire({
+                title: 'Làm lại từ đầu?', text: "Bạn sẽ bị xóa sạch điểm số và lịch sử làm bài!", icon: 'warning', showCancelButton: true,
+                confirmButtonColor: '#ef4444', confirmButtonText: 'Đồng ý'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    completedTasks = []; usedHints = []; usedAnswers = []; failedAttempts = {}; failedTasks = [];
+                    saveProgress(); cmEditor.setValue(""); currentTask = null; 
+                    document.getElementById('activeTaskBox').classList.add('hidden'); // Ẩn bảng ghim
+                    renderTasks(); resetDB();
+                }
+            });
+        }
+
+        function updateScoreUI() {
+            let currentScore = 0; const maxScore = tasks.length * 20; // 200 điểm
+            completedTasks.forEach(taskId => {
+                if (usedAnswers.includes(taskId) || failedTasks.includes(taskId)) currentScore += 0;
+                else if (usedHints.includes(taskId)) currentScore += 10;
+                else currentScore += 20;
+            });
+            const percent = (completedTasks.length / tasks.length) * 100;
+            document.getElementById('score-display').innerText = `${currentScore} / ${maxScore} Điểm`;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            if(percent === 100) document.getElementById('progress-bar').classList.add('bg-green-500');
+            else document.getElementById('progress-bar').classList.remove('bg-green-500');
+        }
+
+        // HÀM CHỌN VÀ GHIM NHIỆM VỤ LÊN TRÊN
+        function selectTask(taskId) {
+            currentTask = taskId; 
+            renderTasks(); 
+            
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                document.getElementById('activeTaskTitle').innerText = task.title;
+                document.getElementById('activeTaskDesc').innerText = task.desc;
+                document.getElementById('activeTaskBox').classList.remove('hidden');
+                
+                // Cuộn mượt màn hình lên vị trí khung gõ code
+                document.getElementById('activeTaskBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            cmEditor.focus();
+        }
+
+        function useHint() {
+            if (!currentTask) return Swal.fire('Thông báo', 'Hãy chọn 1 nhiệm vụ bên trái!', 'info');
+            if (completedTasks.includes(currentTask) || failedTasks.includes(currentTask)) { cmEditor.setValue(tasks.find(t => t.id === currentTask).hintCode); return; }
+            if (!usedHints.includes(currentTask) && !usedAnswers.includes(currentTask)) {
+                Swal.fire({ title: 'Xem khung gợi ý?', text: 'Câu này sẽ chỉ còn 10 điểm. Bạn chắc chứ?', icon: 'question', showCancelButton: true, confirmButtonColor: '#eab308', confirmButtonText: 'Xem gợi ý' })
+                .then((result) => { if (result.isConfirmed) { usedHints.push(currentTask); saveProgress(); cmEditor.setValue(tasks.find(t => t.id === currentTask).hintCode); renderTasks(); } });
+            } else cmEditor.setValue(tasks.find(t => t.id === currentTask).hintCode);
+        }
+
+        function showAnswer() {
+            if (!currentTask) return Swal.fire('Thông báo', 'Hãy chọn 1 nhiệm vụ bên trái!', 'info');
+            if (completedTasks.includes(currentTask)) { cmEditor.setValue(tasks.find(t => t.id === currentTask).answerCode); return; }
+            Swal.fire({ title: 'Xem đáp án trọn vẹn?', text: 'Bạn sẽ nhận 0 điểm cho câu này.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Xem đáp án' })
+            .then((result) => { if (result.isConfirmed) { if (!usedAnswers.includes(currentTask)) usedAnswers.push(currentTask); saveProgress(); cmEditor.setValue(tasks.find(t => t.id === currentTask).answerCode); renderTasks(); } });
+        }
+
+        async function initDB() {
+            const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
+            db = new SQL.Database(); seedData(); loadProgress(); renderTasks();
+            cmEditor = CodeMirror.fromTextArea(document.getElementById("sql-editor"), { mode: "text/x-sql", theme: "dracula", lineNumbers: true, lineWrapping: true });
+            cmEditor.setSize("100%", "100%");
+        }
+
+        function seedData() {
+            const sqlStr = `
+                DROP TABLE IF EXISTS nhacsi; DROP TABLE IF EXISTS casi; DROP TABLE IF EXISTS bannhac; DROP TABLE IF EXISTS banthuam; DROP TABLE IF EXISTS theloai;
+                CREATE TABLE nhacsi (Aid INT PRIMARY KEY, TenNS TEXT);
+                INSERT INTO nhacsi VALUES (1, 'Văn Cao'), (2, 'Phạm Tuyên'), (3, 'Trịnh Công Sơn'), (4, 'Đỗ Nhuận');
+                CREATE TABLE casi (Sid TEXT PRIMARY KEY, TenCS TEXT);
+                INSERT INTO casi VALUES ('TK', 'Trần Khánh'), ('QDP', 'Quý Dương'), ('YM', 'Y Moan'), ('LD', 'Lê Dung');
+                CREATE TABLE bannhac (Mid TEXT PRIMARY KEY, TenBN TEXT, Aid INT);
+                INSERT INTO bannhac VALUES ('0001', 'Tiến quân ca', 1), ('0002', 'Trường ca Sông Lô', 1), ('0003', 'Như có Bác trong ngày đại thắng', 2), ('0004', 'Diễm xưa', 3), ('0005', 'Du kích sông Thao', 4);
+                CREATE TABLE banthuam (id INT PRIMARY KEY, Mid TEXT, Sid TEXT);
+                INSERT INTO banthuam VALUES (1, '0001', 'TK'), (2, '0001', 'QDP'), (3, '0003', 'QDP'), (4, '0005', 'YM'), (5, '0004', 'LD');
+            `; db.run(sqlStr);
+        }
+
+        function viewData(tableName) { 
+            cmEditor.setValue(`SELECT * FROM ${tableName};`); 
+            currentTask = null; 
+            document.getElementById('activeTaskBox').classList.add('hidden'); // Ẩn bảng ghim khi đang xem CSDL
+            renderTasks(); 
+            runSQL(); 
+        }
+
+        function renderTasks() {
+            const listObj = document.getElementById('task-list'); listObj.innerHTML = '';
+            const grouped = tasks.reduce((acc, task) => { (acc[task.group] = acc[task.group] || []).push(task); return acc; }, {});
+            
+            for (const [groupName, groupTasks] of Object.entries(grouped)) {
+                const groupHeader = document.createElement('div');
+                groupHeader.className = "font-extrabold text-slate-800 bg-slate-200 py-1.5 px-3 rounded-lg text-sm uppercase tracking-wide sticky top-0 z-10 shadow-sm";
+                groupHeader.innerText = groupName;
+                listObj.appendChild(groupHeader);
+                
+                const tasksContainer = document.createElement('div');
+                tasksContainer.className = "space-y-2 mb-4";
+                groupTasks.forEach(task => {
+                    const isActive = (currentTask === task.id); const isDone = completedTasks.includes(task.id); const isFailed = failedTasks.includes(task.id);
+                    
+                    let iconHTML = isDone ? '<i class="fa-solid fa-circle-check text-green-500 mr-2 text-lg"></i>' : '<i class="fa-regular fa-circle text-slate-300 mr-2 text-lg"></i>';
+                    let badgeHTML = '';
+                    if (isDone || usedAnswers.includes(task.id) || usedHints.includes(task.id) || isFailed) {
+                        if (usedAnswers.includes(task.id) || isFailed) badgeHTML = `<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-2">0đ</span>`;
+                        else if (usedHints.includes(task.id)) badgeHTML = `<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold ml-2">10đ</span>`;
+                        else if (isDone) badgeHTML = `<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-2">20đ</span>`;
+                    }
+                    let bgClass = isActive ? 'bg-blue-50 border-blue-400 shadow-md' : 'bg-white hover:bg-slate-50 border-slate-200';
+                    if (isDone && !isActive) bgClass = 'bg-green-50/50 border-green-200 opacity-80';
+
+                    const div = document.createElement('div');
+                    div.className = `p-3 border rounded-xl cursor-pointer transition-all flex items-start ${bgClass}`;
+                    
+                    // Gắn sự kiện click gọi hàm selectTask()
+                    div.onclick = () => { selectTask(task.id); };
+                    
+                    div.innerHTML = `
+                        <div class="mt-0.5">${iconHTML}</div>
+                        <div class="w-full">
+                            <div class="font-bold flex items-center ${isActive ? 'text-blue-700' : (isDone ? 'text-green-700 line-through' : 'text-slate-700')}">${task.title} ${badgeHTML}</div>
+                            <div class="text-sm mt-1 ${isActive ? 'text-slate-700 block' : 'text-slate-500 hidden'}">${task.desc}</div>
+                        </div>
+                    `;
+                    tasksContainer.appendChild(div);
+                });
+                listObj.appendChild(tasksContainer);
+            }
+        }
+
+        function handleWrongAttempt(errorMsg) {
+            if (!failedAttempts[currentTask]) failedAttempts[currentTask] = 0;
+            failedAttempts[currentTask]++; saveProgress(); let remaining = 3 - failedAttempts[currentTask];
+            
+            if (remaining <= 0) {
+                if (!failedTasks.includes(currentTask)) {
+                    failedTasks.push(currentTask); saveProgress();
+                    Swal.fire({ icon: 'error', title: 'Đã nhập sai 3 lần!', html: `Câu này bị <b>khóa ở mức 0 điểm</b>.<br><br><span class="text-red-500">Lỗi: ${errorMsg}</span><br><br><i>Gợi ý: Hãy bấm nút "Đáp án" để đi tiếp.</i>` });
+                } else Swal.fire({ icon: 'error', title: 'Kết quả vẫn sai', text: errorMsg });
+            } else Swal.fire({ icon: 'warning', title: 'Chưa chính xác', html: `Lỗi: <b>${errorMsg}</b><br><br><span class="text-red-500 font-bold">Lưu ý: Bạn còn ${remaining} lần thử!</span>` });
+            renderTasks();
+        }
+
+        function runSQL() {
+            const sql = cmEditor.getValue().trim();
+            if(!sql) return Swal.fire({ icon: 'warning', title: 'Oops...', text: 'Bạn chưa nhập câu lệnh!' });
+
+            try {
+                const result = db.exec(sql); renderTable(result);
+                
+                if (currentTask !== null && !completedTasks.includes(currentTask)) {
+                    const taskObj = tasks.find(t => t.id === currentTask);
+                    if (taskObj && taskObj.validate(result, db)) {
+                        triggerConfetti(); completedTasks.push(currentTask); saveProgress(); 
+                        let pts = 20; if (usedAnswers.includes(currentTask) || failedTasks.includes(currentTask)) pts = 0; else if (usedHints.includes(currentTask)) pts = 10;
+                        Swal.fire({ icon: pts > 0 ? 'success' : 'info', title: `+${pts} Điểm!`, html: `<b>Chính xác!</b><br><br><div class="bg-blue-50 text-blue-800 p-3 rounded text-sm text-left"><i class="fa-solid fa-book-open mr-2"></i><b>Giải thích:</b> ${taskObj.explain}</div>`, confirmButtonColor: '#3b82f6' });
+                        renderTasks();
+                    } else handleWrongAttempt("Lệnh chạy thành công nhưng dữ liệu kết quả chưa đúng với yêu cầu.");
+                }
+            } catch (err) { 
+                let vnError = err.message;
+                if (vnError.includes("syntax error")) vnError = "Sai cú pháp SQL (thiếu từ khóa, sai chính tả, hoặc quên dấu phẩy).";
+                else if (vnError.includes("no such table")) vnError = "Tên bảng không tồn tại.";
+                else if (vnError.includes("no such column")) vnError = "Tên cột không tồn tại.";
+                else if (vnError.includes("UNIQUE constraint failed")) vnError = "Dữ liệu thêm vào bị trùng Khóa chính (Primary Key).";
+                if(currentTask !== null && !completedTasks.includes(currentTask)) handleWrongAttempt(vnError);
+                else Swal.fire({ icon: 'error', title: 'Lỗi câu lệnh', text: vnError });
+            }
+        }
+
+        function resetDB() {
+            seedData(); cmEditor.setValue("");
+            document.getElementById('output-container').innerHTML = '<div class="w-full text-center text-slate-500 mt-10"><i class="fa-solid fa-database text-3xl mb-2 opacity-50"></i><br>Đã khôi phục dữ liệu gốc</div>';
+            Swal.fire({ icon: 'info', title: 'Đã khôi phục CSDL', timer: 1500, showConfirmButton: false });
+        }
+
+        function renderTable(res) {
+            const container = document.getElementById('output-container');
+            if (!res || res.length === 0) { container.innerHTML = `<div class="p-4 text-green-600 font-medium bg-green-50 rounded-lg border border-green-200"><i class="fa-solid fa-check-circle mr-2"></i>Câu lệnh thực thi thành công! (Lệnh thay đổi cấu trúc/dữ liệu sẽ không trả về bảng)</div>`; return; }
+            const columns = res[0].columns; const values = res[0].values;
+            let html = `<table class="w-full text-sm text-left text-slate-600 border-collapse"><thead class="text-xs text-slate-700 uppercase bg-slate-200"><tr>`;
+            columns.forEach(col => { html += `<th class="px-4 py-3 border-b">${col}</th>`; }); html += `</tr></thead><tbody>`;
+            values.forEach((row, index) => {
+                html += `<tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b hover:bg-blue-50">`;
+                row.forEach(val => { html += `<td class="px-4 py-2">${val !== null ? val : '<em>NULL</em>'}</td>`; }); html += `</tr>`;
+            }); html += `</tbody></table>`; container.innerHTML = html;
+        }
+
+        function triggerConfetti() {
+            var duration = 2 * 1000; var end = Date.now() + duration;
+            (function frame() { confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#26ccff', '#a25afd'] }); confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#26ccff', '#a25afd'] }); if (Date.now() < end) requestAnimationFrame(frame); }());
+        }
+        window.onload = () => { initDB(); };
+    </script>
+</body>
+</html>
